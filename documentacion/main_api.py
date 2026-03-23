@@ -39,11 +39,20 @@ today_str         = ''
 
 # ── HELPERS DE PARSEO ──────────────────────────────────────────────────────────
 def extract_bop(text):
+    """Extrae IDs BOP de 7 dígitos. Maneja: typo BOB, múltiples IDs con / , - y."""
     if not text:
         return []
-    labeled = re.findall(r'(?:ID\s*BOP|IdBop|ID\s*Bop)[:\s\*\[#\s]*(\d{7})', text, re.I)
-    if labeled:
-        return labeled
+    # Busca el prefijo ID BOP / ID BOB / IdBop y extrae todos los números de 7 dígitos que siguen
+    labeled_match = re.search(
+        r'(?:ID\s*BO[BP]|IdBop|ID\s*Bop)[:\s\*\[#\s]*([\d/,\s\-y]+)',
+        text, re.I
+    )
+    if labeled_match:
+        chunk = labeled_match.group(1)
+        bops = re.findall(r'\d{7}', chunk)
+        if bops:
+            return bops
+    # Fallback: cualquier número de 7 dígitos en el texto
     return re.findall(r'\b(\d{7})\b', text)
 
 def is_bo_fmt(text):
@@ -400,7 +409,7 @@ def procesar_mensaje(msg):
 
     # ── Reporte del driver ─────────────────────────────────────────────────────
     is_drv = bool(
-        re.search(r'ID\s*BOP|ID\s*Bop', text, re.I) and
+        re.search(r'ID\s*BO[BP]|ID\s*Bop', text, re.I) and
         re.search(r'estatus|status', text, re.I)
     )
     if not is_drv:
@@ -408,23 +417,25 @@ def procesar_mensaje(msg):
 
     r = parse_driver(text)
     if r:
-        bop = r['bop']
+        # Extraer todos los BOPs del mensaje (pueden ser múltiples con / , - y)
+        all_bops = extract_bop(text)
         with state_lock:
-            ruta_real = bop_to_ruta.get(bop) or r['ruta'] or '?'
-            if bop not in bop_reports:
-                bop_reports[bop] = {
-                    'phone': phone, 'nombre': nombre, 'ruta': ruta_real,
-                    'punto': r['punto'], 'status': r['status'], 'obs': r['obs'],
-                    'ts': ts, 'hora': hora, 'msgs': [], 'imgs': 0, 'media': [],
-                }
-            else:
-                bop_reports[bop]['status'] = r['status']
-                bop_reports[bop]['obs']    = r['obs']
-                bop_reports[bop]['hora']   = hora
-            bop_reports[bop]['msgs'].append(f'{hora} {nombre}: {text[:100]}')
-            # Registrar como último BOP de este driver
-            last_bop_by_phone[phone] = bop
-        print(f'[RT] DRV BOP={bop} status={r["status"]} ruta={ruta_real}', flush=True)
+            for bop in all_bops:
+                ruta_real = bop_to_ruta.get(bop) or r['ruta'] or '?'
+                if bop not in bop_reports:
+                    bop_reports[bop] = {
+                        'phone': phone, 'nombre': nombre, 'ruta': ruta_real,
+                        'punto': r['punto'], 'status': r['status'], 'obs': r['obs'],
+                        'ts': ts, 'hora': hora, 'msgs': [], 'imgs': 0, 'media': [],
+                    }
+                else:
+                    bop_reports[bop]['status'] = r['status']
+                    bop_reports[bop]['obs']    = r['obs']
+                    bop_reports[bop]['hora']   = hora
+                bop_reports[bop]['msgs'].append(f'{hora} {nombre}: {text[:100]}')
+            # Registrar último BOP (el primero del mensaje)
+            last_bop_by_phone[phone] = all_bops[0]
+        print(f'[RT] DRV BOPs={all_bops} status={r["status"]}', flush=True)
 
 # ── INICIALIZACIÓN: cargar mensajes del día desde Whapi ───────────────────────
 def init_today():
