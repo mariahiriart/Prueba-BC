@@ -1,0 +1,46 @@
+# ── Credenciales ──────────────────────────────────────────────────────────────
+.env
+*.env
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+venv/
+*_venv/
+.venv/
+
+# ── Datos operativos (no subir al repo) ───────────────────────────────────────
+documentacion/rutas_*.xlsx
+documentacion/msgs_*.json
+documentacion/whatsapp_*.json
+documentacion/test_payload.json
+documentacion/asignacion_hoy.jpg
+
+# ── Dashboards generados (output, no código) ──────────────────────────────────
+documentacion/dashboard_*/
+
+# ── Archivos de evidencia y multimedia ────────────────────────────────────────
+documentacion/Evidencias/
+documentacion/Simpliroute/
+documentacion/Telegram/
+documentacion/*.jpg
+documentacion/*.png
+documentacion/*.pdf
+documentacion/*.vcf
+documentacion/*.html
+documentacion/*.csv
+
+# ── ngrok / logs ──────────────────────────────────────────────────────────────
+documentacion/ngrok.exe
+documentacion/*.log
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+.vscode/
